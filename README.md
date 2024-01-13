@@ -14,4 +14,8 @@
 ## SetUp bookinfo
 
 - `kubectl create ns bookinfo`
-- `kubectl create secret generic reviews-db-credentials --from-literal rootpassword=password`
+- `kubectl -n bookinfo create secret generic reviews-db-credentials --from-literal rootpasswd=password`
+- `kubectl apply -f ./infra/reviews/bookinfo-reviews-db-init.yaml`
+- `kubectl apply -f ./infra/reviews/pv.yaml`
+- `kubectl apply -f ./infra/reviews/pvc.yaml`
+- `kubectl apply -f ./infra/reviews/bookinfo-reviews-db.yaml`
