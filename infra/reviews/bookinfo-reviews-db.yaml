@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reviews-db-v1
+  namespace: bookinfo
+  labels:
+    app: reviews-db
+    version: v1
+spec:
+  ports:
+    - port: 3306
+      name: tcp
+  selector:
+    app: reviews-db
+    version: v1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: reviews-db-v1
+  namespace: bookinfo
+  labels:
+    app: reviews-db
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reviews-db
+      version: v1
+  serviceName: reviews-db-v1
+  template:
+    metadata:
+      labels:
+        app: reviews-db
+        version: v1
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0.33
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--default-authentication-plugin"
+            - "mysql_native_password"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reviews-db-credentials
+                  key: rootpasswd
+          volumeMounts:
+            - name: var-lib-mysql
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: var-lib-mysql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: gp2
+        resources:
+          requests:
+            storage: 1Gi
