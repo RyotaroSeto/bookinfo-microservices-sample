@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratings-db
+  namespace: bookinfo
+  labels:
+    app: ratings-db
+spec:
+  ports:
+    - port: 3306
+      name: tcp
+  selector:
+    app: ratings-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ratings-db
+  namespace: bookinfo
+  labels:
+    app: ratings-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ratings-db
+  serviceName: ratings-db
+  template:
+    metadata:
+      labels:
+        app: ratings-db
+        version: v1
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0.33
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--default-authentication-plugin"
+            - "mysql_native_password"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ratings-db-credentials
+                  key: rootpasswd
+          volumeMounts:
+            - name: var-lib-mysql
+              mountPath: /var/lib/mysql
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: initdb
+          configMap:
+            name: ratings-db-init
+            items:
+              - key: CREATE_RATINGS_DATA.sql
+                path: ./CREATE_RATINGS_DATA.sql
+  volumeClaimTemplates:
+    - metadata:
+        name: var-lib-mysql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: gp2
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ratings-db-init
+  namespace: bookinfo
+  labels:
+    app: ratings-db
+data:
+  CREATE_RATINGS_DATA.sql: |-
+    CREATE DATABASE ratings;
+
+    CREATE TABLE ratings.ratings (
+        id INT AUTO_INCREMENT,
+        product_id INT,
+        reviewer TEXT,
+        stars INT,
+        PRIMARY KEY (id)
+    );

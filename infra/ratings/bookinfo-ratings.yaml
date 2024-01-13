@@ -1,0 +1,75 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratings
+  namespace: bookinfo
+  labels:
+    app: ratings
+spec:
+  selector:
+    app: ratings
+  ports:
+    - name: http
+      port: 9080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ratings
+  namespace: bookinfo
+  labels:
+    app: ratings
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ratings
+  template:
+    metadata:
+      labels:
+        app: ratings
+    spec:
+      containers:
+        - name: ratings
+          image: registry.gitlab.com/cloudnative_impress/bookinfo-microservices/ratings:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+            requests:
+              cpu: "0.5"
+              memory: "256Mi"
+          env:
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ratings
+                  key: DB_URL
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ratings
+                  key: DB_USER
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ratings-db-credentials
+                  key: rootpasswd
+      imagePullSecrets:
+        - name: bookinfo-microservices-registry
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ratings
+  namespace: bookinfo
+  labels:
+    app: ratings
+data:
+  DB_URL: "jdbc:mysql://ratings-db:3306/ratings"
+  DB_USER: "root"

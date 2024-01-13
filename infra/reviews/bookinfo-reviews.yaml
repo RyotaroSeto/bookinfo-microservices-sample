@@ -1,0 +1,76 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reviews
+  namespace: bookinfo
+  labels:
+    app: reviews
+spec:
+  selector:
+    app: reviews
+  ports:
+    - name: http
+      port: 9080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reviews
+  namespace: bookinfo
+  labels:
+    app: reviews
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reviews
+  template:
+    metadata:
+      labels:
+        app: reviews
+    spec:
+      containers:
+        - name: reviews
+          image: ghcr.io/ryotaroseto/reviews:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: reviews
+                  key: DB_URL
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: reviews
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reviews-db-credentials
+                  key: rootpasswd
+      imagePullSecrets:
+        - name: bookinfo-microservices-registry
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reviews
+  namespace: bookinfo
+  labels:
+    app: reviews
+data:
+  DB_URL: "jdbc:mysql://reviews-db-v1:3306/reviews"
+  DB_USER: "root"
