@@ -54,13 +54,15 @@ spec:
           volumeMounts:
             - name: var-lib-mysql
               mountPath: /var/lib/mysql
-  volumeClaimTemplates:
-    - metadata:
-        name: var-lib-mysql
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: gp2
-        resources:
-          requests:
-            storage: 1Gi
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: initdb
+          configMap:
+            name: reviews-db-v1-init
+            items:
+              - key: CREATE_REVIEWS_DATA.sql
+                path: ./CREATE_REVIEWS_DATA.sql
+        - name: var-lib-mysql
+          persistentVolumeClaim:
+            claimName: reviews-db-v1-pvc
