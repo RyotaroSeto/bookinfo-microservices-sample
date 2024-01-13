@@ -1,4 +1,4 @@
-# bookinfo-microservices-sample
+# microservices-sample2
 
 ## Kind SetUp
 
