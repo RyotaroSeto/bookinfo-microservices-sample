@@ -23,7 +23,11 @@ $ kubectl apply -f ./infra/reviews/pv.yaml
 $ kubectl apply -f ./infra/reviews/pvc.yaml
 $ kubectl apply -f ./infra/reviews/bookinfo-reviews-db.yaml
 $ kubectl apply -f ./infra/reviews/bookinfo-reviews.yaml
-$ kubectl apply -f infra/ratings
+$ kubectl -n bookinfo create secret generic ratings-db-credentials --from-literal rootpasswd=password
+$ kubectl apply -f ./infra/ratings/pv.yaml
+$ kubectl apply -f ./infra/ratings/pvc.yaml
+$ kubectl apply -f ./infra/ratings/bookinfo-ratings-db.yaml
+$ kubectl apply -f ./infra/ratings/bookinfo-ratings.yaml
 ```
 
 ## Check Database
