@@ -59,16 +59,9 @@ spec:
             items:
               - key: CREATE_RATINGS_DATA.sql
                 path: ./CREATE_RATINGS_DATA.sql
-  volumeClaimTemplates:
-    - metadata:
-        name: var-lib-mysql
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: gp2
-        resources:
-          requests:
-            storage: 1Gi
+        - name: var-lib-mysql
+          persistentVolumeClaim:
+            claimName: ratings-db-v1-pvc
 ---
 apiVersion: v1
 kind: ConfigMap

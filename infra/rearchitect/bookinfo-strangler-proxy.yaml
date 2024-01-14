@@ -89,14 +89,50 @@ data:
                 virtual_hosts:
                 - name: local_service
                   domains: ["*"]
-                  routes:
-                  - match:
-                      prefix: "/"
-                    route:
-                      host_rewrite_literal: reviews
-                      cluster: reviews
+                  matcher:
+                    matcher_tree:
+                      input:
+                        name: request-headers
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.type.matcher.v3.HttpRequestHeaderMatchInput
+                          header_name: :path
+                      prefix_match_map:
+                        map:
+                          "/reviews/ratings":
+                            action:
+                              name: route_ratings
+                              typed_config:
+                                "@type": type.googleapis.com/envoy.config.route.v3.Route
+                                match:
+                                  prefix: "/reviews/ratings"
+                                route:
+                                  prefix_rewrite: "/ratings"
+                                  host_rewrite_literal: ratings
+                                  cluster: ratings
+                          "/":
+                            action:
+                              name: route_reviews
+                              typed_config:
+                                "@type": type.googleapis.com/envoy.config.route.v3.Route
+                                match:
+                                  prefix: "/"
+                                route:
+                                  host_rewrite_literal: reviews
+                                  cluster: reviews
 
       clusters:
+      - name: ratings
+        type: LOGICAL_DNS
+        dns_lookup_family: V4_ONLY
+        load_assignment:
+          cluster_name: ratings
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: ratings
+                    port_value: 9080
       - name: reviews
         type: LOGICAL_DNS
         dns_lookup_family: V4_ONLY

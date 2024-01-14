@@ -46,7 +46,7 @@ spec:
 
           env:
             - name: REVIEWS_HOSTNAME
-              value: reviews
+              value: strangler-proxy
             - name: OTEL_TRACES_EXPORTER
               value: otlp
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

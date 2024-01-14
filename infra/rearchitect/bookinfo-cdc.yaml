@@ -1,0 +1,95 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bookinfo-cdc
+  namespace: bookinfo
+  labels:
+    app: bookinfo-cdc
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      parallelism: 1
+      backoffLimit: 4
+      template:
+        metadata:
+          labels:
+            app: bookinfo-cdc
+        spec:
+          containers:
+            - name: mysql-client
+              image: mysql:8.0.33
+              imagePullPolicy: IfNotPresent
+              command:
+                - /usr/local/bin/bookinfo/cdc.sh
+              volumeMounts:
+                - name: scripts
+                  mountPath: /usr/local/bin/bookinfo
+              env:
+                - name: REVIEWS_DB_HOST
+                  value: reviews-db-v1
+                - name: REVIEWS_DB_USER
+                  value: root
+                - name: REVIEWS_DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: reviews-db-credentials
+                      key: rootpasswd
+                - name: RATINGS_HOST
+                  value: ratings
+          volumes:
+            - name: scripts
+              configMap:
+                name: bookinfo-cdc
+                items:
+                  - key: cdc.sh
+                    path: ./cdc.sh
+                defaultMode: 0744
+          restartPolicy: Never
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bookinfo-cdc
+  namespace: bookinfo
+  labels:
+    app: bookinfo-cdc
+data:
+  cdc.sh: |-
+    #!/usr/bin/env bash
+
+    log() {
+      echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
+    }
+
+    mysql reviews \
+        -h"${REVIEWS_DB_HOST}" \
+        -u"${REVIEWS_DB_USER}" \
+        -p"${REVIEWS_DB_PASSWORD}" \
+        -e'SELECT JSON_OBJECT ( \
+            "id", product_id, "reviewer", reviewer, "stars", stars \
+          ) FROM reviews;' \
+        -s -N \
+        > ./ratings.json 2> /dev/null
+
+    total=$(< ./ratings.json wc -l)
+    succeeded=0; failed=0
+
+    while read -r rating; do
+        status=$(curl -X PUT http://"${RATINGS_HOST}":9080/ratings \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -d "${rating}" \
+            -o "/dev/null" \
+            -w '%{http_code}\n' -s)
+        if [ "${status}" -ne 200 ]; then
+            log "failed to sync: ${rating}"
+            ((failed++))
+        else
+            ((succeeded++))
+        fi
+    done < ./ratings.json
+
+    log "Done."
+    log "total: ${total}, succeeded: ${succeeded}, failed: ${failed}"
