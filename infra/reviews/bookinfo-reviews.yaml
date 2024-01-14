@@ -23,10 +23,15 @@ metadata:
   labels:
     app: reviews
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: reviews
+  # strategy: # ローリングアップデートのレプリカ数の動作を指定
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 25%
+  #     maxUnavailable: 25%
   template:
     metadata:
       labels:
@@ -61,6 +66,11 @@ spec:
                 secretKeyRef:
                   name: reviews-db-credentials
                   key: rootpasswd
+          # readinessProbe:
+          #   initialDelaySeconds: 5
+          #   httpGet:
+          #     path: /reviews/healthz
+          #     port: 8080
       imagePullSecrets:
         - name: bookinfo-microservices-registry
 ---
