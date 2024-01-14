@@ -42,7 +42,7 @@ public class Endpoints {
     public List<Rating> getRatings(@QueryParam("productId") int productId) {
         return reviewsService.findRatings(productId);
     }
-    
+
     /**
      * @return Reviews that has been created by the request.
      */
@@ -66,4 +66,9 @@ public class Endpoints {
         return rating;
     }
 
+    @GET
+    @Path("/healthz")
+    public String healthz() {
+        return "I’m working";
+    }
 }
