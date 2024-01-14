@@ -31,7 +31,7 @@ public class Rating {
     }
 
     public String getColor() {
-        return "black";
+        return "red";
     }
 
 }
