@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ratings
+  labels:
+    app: ratings
+spec:
+  selector:
+    matchLabels:
+      app: ratings
+  endpoints:
+    - port: http
+      path: /q/metrics
